@@ -1,0 +1,21 @@
+# ./docker-compose.yml
+
+version: '3.7'
+
+services:
+  app:
+    build: .
+    depends_on:
+      - db
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+    command:
+      - ./wait-for-pg-then-start.sh
+  db:
+    image: postgres:alpine
+    ports:
+      - 15432:5432
+    volumes:
+      - ./docker/data/postgres:/var/lib/postgresql/data
