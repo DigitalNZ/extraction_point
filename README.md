@@ -28,3 +28,9 @@ at right spot), you can rollback.
 ```sh
 docker-compose run app mix ecto.rollback
 ```
+
+_Note: this tool spins up a container for PostgreSQL to run. It
+persists data under `docker/data/postgres` between command runs.
+
+If you want to start from scratch or clean things out, do
+`rm -rf docker/data/postgres/*`._
