@@ -30,7 +30,7 @@ docker-compose run app mix ecto.rollback
 ```
 
 _Note: this tool spins up a container for PostgreSQL to run. It
-persists data under `docker/data/postgres` between command runs.
+persists data under `docker/data/postgres` between command runs._
 
-If you want to start from scratch or clean things out, do
+_If you want to start from scratch or clean things out, do
 `rm -rf docker/data/postgres/*`._
