@@ -34,3 +34,18 @@ persists data under `docker/data/postgres` between command runs._
 
 _If you want to start from scratch or clean things out, do
 `rm -rf docker/data/postgres/*`._
+
+You can also examine the data via a `psql` session or through the
+Elixir application via `iex`.
+
+For `psql` for direct sql access:
+
+```sh
+docker-compose run app psql -h db -U 'postgres` extraction_point_dev
+```
+
+and here is for `iex`:
+
+```sh
+docker-compose run app iex -S mix
+```
