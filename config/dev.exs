@@ -8,4 +8,5 @@ config :extraction_point, ExtractionPoint.Repo,
   database: "extraction_point_dev",
   hostname: "db",
   port: 5432,
-  pool_size: 10
+  pool_size: 10,
+  types: ExtractionPoint.PostgresTypes
