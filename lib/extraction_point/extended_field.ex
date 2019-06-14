@@ -54,24 +54,24 @@ defmodule ExtractionPoint.ExtendedField do
     # this constrains the format to "standard GPS" (epsg4326) e.g. coordinate pair {longitude,latitude}
     ["SELECT AddGeometryColumn ('#{table_name}','#{label}',4326,'POINT',2)"]
   end
-  # TODO: will this work? is there way to do array with constrained to correct format?
+  # in order to add multiple of geo, we don't constrain it to specific format here
   def add_to_table_sql(%__MODULE__{ftype: "map", label: label, multiple: true}, table_name) do
     [alter_table_statement(table_name, label, "geometry(Point, 4326))[]")]
   end
   def add_to_table_sql(%__MODULE__{ftype: "map_address", label: label, multiple: false}, table_name) do
     # this constrains the format to "standard GPS" (epsg4326) e.g. coordinate pair {longitude,latitude}
-    coordinates_statement = "SELECT AddGeometryColumn ('#{table_name}','#{label}_coordinates',4326,'POINT',2)"
-    address_statement = alter_table_statement(table_name, "#{label}_address", "text")
+    coordinates_statement = "SELECT AddGeometryColumn ('#{table_name}','#{String.downcase(label)}_coordinates',4326,'POINT',2)"
+    address_statement = alter_table_statement(table_name, "#{String.downcase(label)}_address", "text")
 
     [coordinates_statement, address_statement]
   end
-  # TODO: will this work? is there way to do array with constrained to correct format?
+  # in order to add multiple of geo, we don't constrain it to specific format here
   def add_to_table_sql(%__MODULE__{ftype: "map_address", label: label, multiple: true}, table_name) do
-    [alter_table_statement(table_name, "#{label}_coordinates", "geometry(Point, 4326))[]"),
-     alter_table_statement(table_name, "#{label}_address", "text[]")]
+    [alter_table_statement(table_name, "#{String.downcase(label)}_coordinates", "geometry[]"),
+     alter_table_statement(table_name, "#{String.downcase(label)}_address", "text[]")]
   end
 
   defp alter_table_statement(table_name, label, type) do
-    "ALTER TABLE #{table_name} ADD COLUMN #{label} #{type}"
+    "ALTER TABLE #{table_name} ADD COLUMN #{String.downcase(label)} #{type}"
   end
 end
