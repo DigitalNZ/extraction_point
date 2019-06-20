@@ -22,6 +22,23 @@ machine. So the first time you run any of the commands may be slow.
 docker-compose run app mix extraction_point.load_sql _the_kete_export_file.sql_
 ```
 
+The next step is to trigger the migration of data from Kete's specific
+format to modern PostgreSQL tables and columns.
+
+This includes _per row_ updates, so it can take a long time depending
+on how much data your Kete site had.
+
+```sh
+docker-compose run app mix ecto.migrate
+```
+
+If you have a lot of data, you may want to surpress standard output
+like this instead:
+
+```sh
+docker-compose run app mix ecto.migrate > /dev/null
+```
+
 If you need to undo last migration (you can do this repeatedly until
 at right spot), you can rollback.
 
