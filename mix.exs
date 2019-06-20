@@ -27,7 +27,8 @@ defmodule ExtractionPoint.MixProject do
       {:ecto_sql, "~> 3.0"},
       {:geo_postgis, "~> 3.1"},
       {:jason, "~> 1.1"},
-      {:postgrex, ">= 0.0.0"}
+      {:postgrex, ">= 0.0.0"},
+      {:sweet_xml, "~> 0.6.6"}
     ]
   end
 end

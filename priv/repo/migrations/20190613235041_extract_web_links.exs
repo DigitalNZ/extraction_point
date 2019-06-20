@@ -2,10 +2,12 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractWebLinks do
   use Ecto.Migration
 
   import Ecto.Query
+  import ExtractionPoint.DataChange.Table
 
-  alias ExtractionPoint.{ContentType, ExtendedField, Repo}
+  alias ExtractionPoint.{ContentType, Repo}
 
   @table_name "extracted_web_links"
+  @class_name "WebLink"
   @create_extracted ~s"""
   CREATE TABLE #{@table_name} AS
   SELECT id, title, description, url,
@@ -15,23 +17,22 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractWebLinks do
   extended_content FROM web_links
   """
   def up do
-    execute @create_extracted
-    execute "UPDATE #{@table_name} SET tags = '{}' WHERE tags IS NULL"
-    execute "ALTER TABLE #{@table_name} ALTER COLUMN tags SET DEFAULT '{}'"
+    execute(@create_extracted)
+    alter_tags(@table_name)
 
-    content_type = Repo.get_by(from(ct in ContentType, preload: :extended_fields), class_name: "WebLink")
+    content_type =
+      Repo.get_by(from(ct in ContentType, preload: :extended_fields), class_name: @class_name)
 
-    alterations = Enum.reduce(
-      content_type.extended_fields,
-      [],
-      fn ef, acc -> acc ++ ExtendedField.add_to_table_sql(ef, @table_name) end)
+    add_columns_to_table_from_extended_fields(content_type, @table_name)
 
-    Enum.each(alterations, fn s -> execute s end)
+    flush()
+
+    load_data_to_new_columns_from_extended_content(content_type, @table_name)
 
     execute "ALTER TABLE #{@table_name} DROP COLUMN extended_content"
   end
 
   def down do
-    execute "DROP TABLE #{@table_name}"
+    execute("DROP TABLE #{@table_name}")
   end
 end
