@@ -4,15 +4,13 @@ defmodule ExtractionPoint.ExtendedField do
   import ExtractionPoint.ExtendedField.LabelKey
 
   @boolean_types ~w(checkbox radio)
-  @text_types ~w(text textarea year autocomplete choice)
+  @text_types ~w(text textarea year)
   @choice_types ~w(autocomplete choice)
 
   schema "extended_fields" do
     field(:label, :string)
     field(:ftype, :string)
     field(:multiple, :boolean)
-    # virtual field for display/value parsing
-    field(:compound_value, :boolean, virtual: true, default: false)
   end
 
   # possible ftypes:
@@ -48,7 +46,7 @@ defmodule ExtractionPoint.ExtendedField do
   end
 
   def add_to_table_sql(
-        %__MODULE__{ftype: ft, label: l, multiple: false, compound_value: true},
+        %__MODULE__{ftype: ft, label: l, multiple: false},
         table_name
       )
       when ft in @choice_types do
@@ -56,7 +54,7 @@ defmodule ExtractionPoint.ExtendedField do
   end
 
   def add_to_table_sql(
-        %__MODULE__{ftype: ft, label: l, multiple: true, compound_value: true},
+        %__MODULE__{ftype: ft, label: l, multiple: true},
         table_name
       )
       when ft in @choice_types do

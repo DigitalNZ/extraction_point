@@ -6,6 +6,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   @boolean_types ~w(checkbox radio)
   @simple_types ~w(text textarea date)
+  @choice_types ~w(autocomplete choice)
 
   # possible ftypes:
   # * checkbox
@@ -38,6 +39,43 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     value = fetch_value(doc, label_key) |> resolve_to_boolean()
 
     [{col, value}]
+  end
+
+  def extract_update_pair(%ExtendedField{ftype: ft, label: l}, extended_content, false) when ft in @simple_types do
+    {col, value} = simple_xml_parse(l, extended_content)
+
+    [{col, value}]
+  end
+
+  def extract_update_pair(
+        %ExtendedField{ftype: ft, label: l, multiple: false},
+        extended_content,
+        true
+      ) when ft in @simple_types do
+    {label_key, col} = key_and_col(l)
+    doc = sub_xml_for_key(extended_content, label_key)
+
+    [{col, fetch_value(doc, label_key)}]
+  end
+
+  def extract_update_pair(
+        %ExtendedField{ftype: ft, label: l, multiple: true},
+        extended_content,
+        _
+      )
+      when ft in @simple_types do
+    {label_key, col} = l |> key_and_col()
+
+    values =
+      extended_content
+      |> sub_xml_for_multiple_key(label_key)
+      |> fetch_multiple_values(label_key, 1, [])
+
+    case values do
+      [] -> [{col, nil}]
+      [nil] -> [{col, nil}]
+      [_] -> [{col, values}]
+    end
   end
 
   def extract_update_pair(%ExtendedField{ftype: "year", label: l}, extended_content, false) do
@@ -111,35 +149,33 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     [{col, values}]
   end
 
-  def extract_update_pair(%ExtendedField{label: l, compound_value: true}, extended_content, false) do
-    {label_key, col} = key_and_col(l)
-
-    [{col, fetch_labelled_value_map(extended_content, label_key)}]
-  end
-
+  # choice types themselves have the invalid xml number based elements
+  # so always has_any_multiples will be true for them
   def extract_update_pair(
-        %ExtendedField{label: l, compound_value: true, multiple: false},
+        %ExtendedField{ftype: ft, label: l, multiple: false},
         extended_content,
         true
-      ) do
+  )
+  when ft in @choice_types do
     {label_key, col} = key_and_col(l)
 
-    doc = sub_xml_for_key(extended_content, label_key)
+    string = sub_xml_for_key(extended_content, label_key)
 
-    [{col, fetch_labelled_value_map(doc, label_key)}]
+    [{col, fetch_choice_labelled_value_map(string, label_key)}]
   end
 
   def extract_update_pair(
-        %ExtendedField{label: l, compound_value: true, multiple: true},
+        %ExtendedField{ftype: ft, label: l, multiple: true},
         extended_content,
         _
-      ) do
+  )
+    when ft in @choice_types do
     {label_key, col} = l |> key_and_col()
 
     values =
       extended_content
       |> sub_xml_for_multiple_key(label_key)
-      |> fetch_multiple_values(label_key, 1, [], &fetch_labelled_value_map/2)
+      |> fetch_multiple_values(label_key, 1, [], &fetch_choice_labelled_value_map/2)
 
     [{col, values}]
   end
@@ -233,44 +269,9 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     ]
   end
 
-  def extract_updapte_pair(%ExtendedField{ftype: ft, label: l}, extended_content, false)
-      when ft in @simple_types do
-    {col, value} = simple_xml_parse(l, extended_content)
-
-    [{col, value}]
-  end
-
-  def extract_update_pair(
-        %ExtendedField{ftype: ft, label: l, multiple: false},
-        extended_content,
-        true
-      )
-      when ft in @simple_types do
-    {label_key, col} = key_and_col(l)
-    doc = sub_xml_for_key(extended_content, label_key)
-
-    [{col, fetch_value(doc, label_key)}]
-  end
-
-  def extract_update_pair(
-        %ExtendedField{ftype: ft, label: l, multiple: true},
-        extended_content,
-        _
-      )
-      when ft in @simple_types do
-    {label_key, col} = l |> key_and_col()
-
-    values =
-      extended_content
-      |> sub_xml_for_multiple_key(label_key)
-      |> fetch_multiple_values(label_key, 1, [])
-
-    [{col, values}]
-  end
-
   defp fetch_multiple_values(string, key, n, acc, extractor \\ &fetch_value/2) do
     if String.contains?(string, "<#{n}>") do
-      xml = Regex.run(~r/<#{n}[^>]*>(.*)<\/#{n}>/, string)
+      xml = Regex.run(~r/<#{n}[^>]*>(.*)<\/#{n}>/, string) |> List.last()
 
       fetch_multiple_values(string, key, n + 1, acc ++ [extractor.(xml, key)])
     else
@@ -285,19 +286,32 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     {key, col}
   end
 
-  defp fetch_value(xml, key), do: xml |> xpath(~x"/#{key}/text()")
+  defp fetch_value(xml, key), do: xml |> resolved_xpath(~x"/#{key}/text()")
 
   defp fetch_labelled_value(xml, key) do
-    label = xml |> xpath(~x"/#{key}/@label")
-    value = xml |> xpath(~x"/#{key}/text()")
+    label = xml |> resolved_xpath(~x"/#{key}/@label")
+    value = xml |> resolved_xpath(~x"/#{key}/text()")
 
     {label, value}
   end
 
-  defp fetch_labelled_value_map(xml, key) do
-    {label, value} = fetch_labelled_value(xml, key)
+  defp fetch_choice_labelled_value_map(string, key, number \\ 1) do
+    {label, value} = extract_choice_label_value(string, key, number)
 
-    %{label: label, value: value}
+    case {label, value} do
+      {nil, nil} -> nil
+      _ -> %{label: label, value: value}
+    end
+  end
+
+  defp extract_choice_label_value(string, key, number) do
+    results = Regex.run(~r/<#{key}[^>]*><#{number} label=\"([^\"]*)\">([^>]*)<\/#{number}><\/#{key}>/, string)
+
+    if Enum.any?(results) do
+      {Enum.at(results, 1), Enum.at(results, 2)}
+    else
+      nil
+    end
   end
 
   defp fetch_map_value(xml, key) do
@@ -308,35 +322,37 @@ defmodule ExtractionPoint.ExtendedField.Parse do
   end
 
   defp format_coordinates(string) do
-    coordinates = string
-    |> String.split(",")
-    |> Enum.map(&String.to_float/1)
-    |> List.to_tuple()
+    coordinates =
+      string
+      |> String.split(",")
+      |> Enum.map(&String.to_float/1)
+      |> List.to_tuple()
 
     {:ok, coordinates}
   end
 
   defp coordinates_as_string(xml, key) do
-    coordinates = xml
-    |> xpath(~x"/#{key}/coords/text()")
-    |> to_string()
+    coordinates = xml |> resolved_xpath(~x"/#{key}/coords/text()")
 
-    if byte_size(coordinates) != 0 do
+    if not is_nil(coordinates) and byte_size(coordinates) != 0 do
       {:ok, coordinates}
     end
   end
 
-  defp fetch_address_value(xml, key), do: xml |> xpath(~x"/#{key}/address/text()") |> to_string()
+  defp fetch_address_value(xml, key), do: xml |> resolved_xpath(~x"/#{key}/address/text()")
 
   defp fetch_topic_type_value(xml, key) do
     {topic_label, url} = fetch_labelled_value(xml, key)
 
-    %{label: topic_label, url: url}
+    case {topic_label, url} do
+      {nil, nil} -> nil
+      _ -> %{label: topic_label, url: url}
+    end
   end
 
   def fetch_year_value(xml, key) do
-    circa = xml |> xpath(~x"/#{key}/circa/text()")
-    value = xml |> xpath(~x"/#{key}/value/text()")
+    circa = xml |> resolved_xpath(~x"/#{key}/circa/text()")
+    value = xml |> resolved_xpath(~x"/#{key}/value/text()")
 
     if circa do
       if circa == '1' do
@@ -345,7 +361,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
         value
       end
     else
-      xml |> xpath(~x"/#{key}/text()")
+      xml |> resolved_xpath(~x"/#{key}/text()")
     end
   end
 
@@ -360,11 +376,21 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   # since some other extended field is a multiple, we can't xml parse overall extended_content
   # as it invalid xml, get substring for field first
-  defp sub_xml_for_key(string, key), do: Regex.run(~r/<#{key}[^>]*>.*<\/#{key}>/, string)
+  defp sub_xml_for_key(string, key), do: Regex.run(~r/<#{key}[^>]*>.*<\/#{key}>/, string) |> List.last()
 
   defp sub_xml_for_multiple_key(string, key),
-    do: Regex.run(~r/<#{key}_multiple[^>]*>(.*)<\/#{key}_multiple>/, string)
+    do: Regex.run(~r/<#{key}_multiple[^>]*>(.*)<\/#{key}_multiple>/, string) |> List.last()
 
   defp populated_string_or_nil(""), do: nil
   defp populated_string_or_nil(string), do: string
+
+  # make sure xpath returns nil or string
+  defp resolved_xpath(xml, pattern) do
+    result = xpath(xml, pattern)
+
+    case result do
+      nil -> nil
+      _ -> result |> to_string()
+    end
+  end
 end

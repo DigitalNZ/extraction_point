@@ -24,11 +24,11 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractVideos do
     type =
       Repo.get_by(from(ct in ContentType, preload: :extended_fields), class_name: @class_name)
 
-    add_columns_to_table_from_extended_fields(type, @table_name)
+    add_columns_to_table_from_extended_fields(type.extended_fields, @table_name)
 
     flush()
 
-    load_data_to_new_columns_from_extended_content(type, @table_name)
+    load_data_to_new_columns_from_extended_content(type.extended_fields, @table_name)
 
     execute("ALTER TABLE #{@table_name} DROP COLUMN extended_content")
   end
