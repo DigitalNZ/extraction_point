@@ -2,19 +2,23 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractStillImages do
   use Ecto.Migration
 
   import Ecto.Query
-  import ExtractionPoint.DataChange.Table
+  import ExtractionPoint.DataChange.{PreviousUrlPatterns, Table}
 
   alias ExtractionPoint.{ContentType, Repo}
 
+  @type_path_key "images"
   @table_name "extracted_still_images"
   @class_name "StillImage"
   @create_extracted ~s"""
   CREATE TABLE #{@table_name} AS
-  SELECT id, title, description, version,
+  SELECT T1.id, title, description, version,
   basket_id, license_id,
-  created_at AS inserted_at, updated_at,
+  T1.created_at AS inserted_at, T1.updated_at,
   STRING_TO_ARRAY(raw_tag_list, ', ') AS tags,
-  extended_content FROM still_images
+  B.urlified_name as basket_key,
+  ARRAY[#{path_patterns(@type_path_key)}] AS previous_url_patterns,
+  T1.extended_content FROM still_images T1
+  INNER JOIN baskets B ON (basket_id = B.id)
   """
   def up do
     execute(@create_extracted)
