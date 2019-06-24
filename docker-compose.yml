@@ -13,6 +13,8 @@ services:
         target: /app
     command:
       - ./wait-for-pg-then-start.sh
+    ports:
+      - "4000:4000"
   db:
     image: mdillon/postgis:11-alpine
     ports:

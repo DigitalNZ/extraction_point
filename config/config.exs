@@ -1,33 +1,31 @@
 # This file is responsible for configuring your application
 # and its dependencies with the aid of the Mix.Config module.
+#
+# This configuration file is loaded before any dependency and
+# is restricted to this project.
+
+# General application configuration
 use Mix.Config
 
-# This configuration is loaded before any dependency and is restricted
-# to this project. If another project depends on this project, this
-# file won't be loaded nor affect the parent project. For this reason,
-# if you want to provide default values for your application for
-# third-party users, it should be done in your "mix.exs" file.
-
-# You can configure your application as:
-#
-#     config :extraction_point, key: :value
-#
-# and access this configuration in your application as:
-#
-#     Application.get_env(:extraction_point, :key)
-#
-# You can also configure a third-party app:
-#
-#     config :logger, level: :info
-#
-
-# It is also possible to import configuration files, relative to this
-# directory. For example, you can emulate configuration per environment
-# by uncommenting the line below and defining dev.exs, test.exs and such.
-# Configuration from the imported file will override the ones defined
-# here (which is why it is important to import them last).
-#
 config :extraction_point,
   ecto_repos: [ExtractionPoint.Repo]
+
+# Configures the endpoint
+config :extraction_point, ExtractionPointWeb.Endpoint,
+  url: [host: "localhost"],
+  secret_key_base: "2yCPDlig8m92wpkiESXfJWLD/IY3He8V+yRTVhQQ5FRuABfvpyUaIvRrvbZSKpJX",
+  render_errors: [view: ExtractionPointWeb.ErrorView, accepts: ~w(json)],
+  pubsub: [name: ExtractionPoint.PubSub, adapter: Phoenix.PubSub.PG2]
+
+# Configures Elixir's Logger
+config :logger, :console,
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:request_id]
+
+# Use Jason for JSON parsing in Phoenix
+config :phoenix, :json_library, Jason
+
+# Import environment specific config. This must remain at the bottom
+# of this file so it overrides the configuration defined above.
 
 import_config "#{Mix.env()}.exs"

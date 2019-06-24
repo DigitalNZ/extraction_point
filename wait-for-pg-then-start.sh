@@ -15,4 +15,4 @@ echo "\nPostgres is available: continuing with database setup..."
 # Potentially Set up the database
 mix ecto.create
 
-iex -S mix
+mix phx.server

@@ -7,3 +7,11 @@ erl_crash.dump
 *.ez
 *.beam
 /config/*.secret.exs
+
+# Ignore package tarball (built via "mix hex.build").
+extraction_point-*.tar
+
+# Since we are building assets from assets/,
+# we ignore priv/static. You may want to comment
+# this depending on your deployment strategy.
+/priv/static/
