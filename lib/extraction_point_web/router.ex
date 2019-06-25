@@ -2,10 +2,12 @@ defmodule ExtractionPointWeb.Router do
   use ExtractionPointWeb, :router
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug :accepts, ["json", "csv"]
   end
 
-  scope "/api", ExtractionPointWeb do
+  scope "/", ExtractionPointWeb do
     pipe_through :api
+
+    resources "/web-links", WebLinkController, only: [:show, :index]
   end
 end
