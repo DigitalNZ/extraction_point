@@ -9,5 +9,6 @@ defmodule ExtractionPointWeb.Router do
     pipe_through :api
 
     resources "/web-links", WebLinkController, only: [:show, :index]
+    resources "/web-links.csv", WebLinkController, only: [:index]
   end
 end
