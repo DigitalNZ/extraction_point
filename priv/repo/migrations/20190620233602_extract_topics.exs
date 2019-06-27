@@ -5,8 +5,9 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractTopics do
   import ExtractionPoint.DataChange.{Contributions, PreviousUrlPatterns, Table}
   import ExtractionPoint.ExtendedField.LabelKey
 
-  alias ExtractionPoint.{TopicType, Repo}
+  alias ExtractionPoint.{TopicType, Repo, SystemSetting}
 
+  @site_name Repo.get_by(SystemSetting.select_value(), name: "Site Name")
   @type_path_key "topics"
   @table_placeholder "__TABLE_NAME__"
   @id_placeholder "__TOPIC_TYPE_ID__"
@@ -19,6 +20,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractTopics do
   T1.created_at AS inserted_at, T1.updated_at,
   STRING_TO_ARRAY(raw_tag_list, ', ') AS tags,
   B.urlified_name as basket_key,
+  CONCAT('oai:', '#{@site_name}:', B.urlified_name, ':', 'Topic:', T1.id) as previous_oai_identifier,
   ARRAY[#{path_patterns(@type_path_key)}] AS previous_url_patterns,
   NULL::integer AS creator_id,
   NULL::text AS creator_login,

@@ -4,8 +4,9 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractWebLinks do
   import Ecto.Query
   import ExtractionPoint.DataChange.{Contributions, PreviousUrlPatterns, Table}
 
-  alias ExtractionPoint.{ContentType, Repo}
+  alias ExtractionPoint.{ContentType, Repo, SystemSetting}
 
+  @site_name Repo.get_by(SystemSetting.select_value(), name: "Site Name")
   @type_path_key "web_links"
   @table_name "extracted_#{@type_path_key}"
   @class_name "WebLink"
@@ -16,6 +17,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractWebLinks do
   T1.created_at AS inserted_at, T1.updated_at,
   STRING_TO_ARRAY(raw_tag_list, ', ') AS tags,
   B.urlified_name as basket_key,
+  CONCAT('oai:', '#{@site_name}:', B.urlified_name, ':', '#{@class_name}:', T1.id) as previous_oai_identifier,
   ARRAY[#{path_patterns(@type_path_key)}] AS previous_url_patterns,
   NULL::integer AS creator_id,
   NULL::text AS creator_login,
