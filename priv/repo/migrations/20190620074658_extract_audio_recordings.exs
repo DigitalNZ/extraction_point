@@ -12,7 +12,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractAudioRecordings do
   @class_name "AudioRecording"
   @create_extracted ~s"""
   CREATE TABLE #{@table_name} AS
-  SELECT T1.id, title, description, version,
+  SELECT T1.id, title, T1.description, version,
   filename, content_type, size,
   id_path_segment_to_file(T1.id, filename) as relative_file_path,
   basket_id, license_id,
@@ -27,8 +27,10 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractAudioRecordings do
   ARRAY[]::integer[] AS contributor_ids,
   ARRAY[]::text[] AS contributor_logins,
   ARRAY[]::text[] AS contributor_names,
+  L.name as license,
   T1.extended_content FROM audio_recordings T1
   INNER JOIN baskets B ON (basket_id = B.id)
+  LEFT OUTER JOIN licenses L ON (T1.license_id = L.id)
   """
 
   def up do

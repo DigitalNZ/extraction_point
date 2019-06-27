@@ -14,7 +14,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractTopics do
   @prefix "extracted"
   @create_extracted_template ~s"""
   CREATE TABLE #{@table_placeholder} AS
-  SELECT T1.id, title, description, version,
+  SELECT T1.id, title, T1.description, version,
   short_summary, index_for_basket_id,
   topic_type_id, basket_id, license_id,
   T1.created_at AS inserted_at, T1.updated_at,
@@ -28,8 +28,10 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractTopics do
   ARRAY[]::integer[] AS contributor_ids,
   ARRAY[]::text[] AS contributor_logins,
   ARRAY[]::text[] AS contributor_names,
+  L.name as license,
   T1.extended_content FROM topics T1
   INNER JOIN baskets B ON (basket_id = B.id)
+  LEFT OUTER JOIN licenses L ON (T1.license_id = L.id)
   WHERE topic_type_id = #{@id_placeholder}
   """
 

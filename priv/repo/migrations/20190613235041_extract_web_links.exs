@@ -12,7 +12,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractWebLinks do
   @class_name "WebLink"
   @create_extracted ~s"""
   CREATE TABLE #{@table_name} AS
-  SELECT T1.id, title, description, url, version,
+  SELECT T1.id, title, T1.description, T1.url, version,
   basket_id, license_id,
   T1.created_at AS inserted_at, T1.updated_at,
   STRING_TO_ARRAY(raw_tag_list, ', ') AS tags,
@@ -25,8 +25,10 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractWebLinks do
   ARRAY[]::integer[] AS contributor_ids,
   ARRAY[]::text[] AS contributor_logins,
   ARRAY[]::text[] AS contributor_names,
+  L.name as license,
   T1.extended_content FROM #{@type_path_key} T1
   INNER JOIN baskets B ON (basket_id = B.id)
+  LEFT OUTER JOIN licenses L ON (T1.license_id = L.id)
   """
 
   def up do

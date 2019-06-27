@@ -12,7 +12,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractStillImages do
   @class_name "StillImage"
   @create_extracted ~s"""
   CREATE TABLE #{@table_name} AS
-  SELECT T1.id, title, description, version,
+  SELECT T1.id, title, T1.description, version,
   id_path_segment_to_file(O.id, O.filename) as relative_original_file_path,
   ARRAY(SELECT id_path_segment_to_file(R.id, R.filename)
   FROM image_files AS R
@@ -30,9 +30,11 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractStillImages do
   ARRAY[]::integer[] AS contributor_ids,
   ARRAY[]::text[] AS contributor_logins,
   ARRAY[]::text[] AS contributor_names,
+  L.name as license,
   T1.extended_content FROM still_images T1
   INNER JOIN baskets B ON (basket_id = B.id)
   INNER JOIN image_files O ON (T1.id = O.still_image_id AND O.parent_id IS NULL)
+  LEFT OUTER JOIN licenses L ON (T1.license_id = L.id)
   """
 
   def up do
