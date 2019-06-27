@@ -2,7 +2,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractTopics do
   use Ecto.Migration
 
   import Ecto.Query
-  import ExtractionPoint.DataChange.{PreviousUrlPatterns, Table}
+  import ExtractionPoint.DataChange.{Contributions, PreviousUrlPatterns, Table}
   import ExtractionPoint.ExtendedField.LabelKey
 
   alias ExtractionPoint.{TopicType, Repo}
@@ -20,6 +20,12 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractTopics do
   STRING_TO_ARRAY(raw_tag_list, ', ') AS tags,
   B.urlified_name as basket_key,
   ARRAY[#{path_patterns(@type_path_key)}] AS previous_url_patterns,
+  NULL::integer AS creator_id,
+  NULL::text AS creator_login,
+  NULL::text AS creator_name,
+  ARRAY[]::integer[] AS contributor_ids,
+  ARRAY[]::text[] AS contributor_logins,
+  ARRAY[]::text[] AS contributor_names,
   T1.extended_content FROM topics T1
   INNER JOIN baskets B ON (basket_id = B.id)
   WHERE topic_type_id = #{@id_placeholder}
@@ -59,6 +65,9 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractTopics do
       load_data_to_new_columns_from_extended_content(full_fields, table_name)
 
       execute("ALTER TABLE #{table_name} DROP COLUMN extended_content")
+
+      execute(update_with_creator("topics", "Topic", table_name))
+      execute(update_with_contributors("topics", "Topic", table_name))
 
       flush()
     end)

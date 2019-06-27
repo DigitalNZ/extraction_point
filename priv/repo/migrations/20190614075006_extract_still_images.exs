@@ -2,7 +2,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractStillImages do
   use Ecto.Migration
 
   import Ecto.Query
-  import ExtractionPoint.DataChange.{PreviousUrlPatterns, Table}
+  import ExtractionPoint.DataChange.{Contributions, PreviousUrlPatterns, Table}
 
   alias ExtractionPoint.{ContentType, Repo}
 
@@ -22,10 +22,17 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractStillImages do
   STRING_TO_ARRAY(raw_tag_list, ', ') AS tags,
   B.urlified_name as basket_key,
   ARRAY[#{path_patterns(@type_path_key)}] AS previous_url_patterns,
+  NULL::integer AS creator_id,
+  NULL::text AS creator_login,
+  NULL::text AS creator_name,
+  ARRAY[]::integer[] AS contributor_ids,
+  ARRAY[]::text[] AS contributor_logins,
+  ARRAY[]::text[] AS contributor_names,
   T1.extended_content FROM still_images T1
   INNER JOIN baskets B ON (basket_id = B.id)
   INNER JOIN image_files O ON (T1.id = O.still_image_id AND O.parent_id IS NULL)
   """
+
   def up do
     execute(@create_extracted)
     alter_tags(@table_name)
@@ -40,6 +47,9 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractStillImages do
     load_data_to_new_columns_from_extended_content(type.extended_fields, @table_name)
 
     execute("ALTER TABLE #{@table_name} DROP COLUMN extended_content")
+
+    execute(update_with_creator("still_images", @class_name, @table_name))
+    execute(update_with_contributors("still_images", @class_name, @table_name))
   end
 
   def down do
