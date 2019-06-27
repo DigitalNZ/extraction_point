@@ -13,6 +13,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractDocuments do
   CREATE TABLE #{@table_name} AS
   SELECT T1.id, title, description, version,
   filename, content_type, size, short_summary,
+  id_path_segment_to_file(T1.id, filename) as relative_file_path,
   basket_id, license_id,
   T1.created_at AS inserted_at, T1.updated_at,
   STRING_TO_ARRAY(raw_tag_list, ', ') AS tags,

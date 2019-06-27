@@ -12,6 +12,11 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractStillImages do
   @create_extracted ~s"""
   CREATE TABLE #{@table_name} AS
   SELECT T1.id, title, description, version,
+  id_path_segment_to_file(O.id, O.filename) as relative_original_file_path,
+  ARRAY(SELECT id_path_segment_to_file(R.id, R.filename)
+  FROM image_files AS R
+  WHERE still_image_id = T1.id AND R.parent_id IS NOT NULL)
+  AS relative_resized_file_paths,
   basket_id, license_id,
   T1.created_at AS inserted_at, T1.updated_at,
   STRING_TO_ARRAY(raw_tag_list, ', ') AS tags,
@@ -19,6 +24,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractStillImages do
   ARRAY[#{path_patterns(@type_path_key)}] AS previous_url_patterns,
   T1.extended_content FROM still_images T1
   INNER JOIN baskets B ON (basket_id = B.id)
+  INNER JOIN image_files O ON (T1.id = O.still_image_id AND O.parent_id IS NULL)
   """
   def up do
     execute(@create_extracted)
