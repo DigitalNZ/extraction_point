@@ -17,7 +17,9 @@ defmodule ExtractionPoint.Exporter do
 
   def list_type(type, options, process_stream) do
     query = raw_sql(type, options)
-    query_for_columns = "#{query} limit 1"
+    stripped_options = options |> Map.delete("limit") |> Map.delete("offset")
+    query_for_columns = raw_sql(type, stripped_options)
+      |> add_to_sql_if_present(%{"limit" => 1}, "limit")
 
     # we do a separate query before batch stream so as to get columns dynamically
     with {:ok, results} <- Ecto.Adapters.SQL.query(Repo, query_for_columns, []) do
@@ -72,21 +74,31 @@ defmodule ExtractionPoint.Exporter do
   defp raw_sql(type, options) when options == %{} do
     "#{select_all_from(type)} ORDER BY id"
   end
-  defp raw_sql(type, %{"except_baskets" => except_baskets}) do
+  defp raw_sql(type, %{"except_baskets" => except_baskets} = options) do
     except_baskets = except_baskets |> String.split(",")
-    ~s"""
+
+    sql = ~s"""
     #{select_all_from(type)}
     WHERE basket_key NOT IN (#{basket_list_as_string(except_baskets)})
     ORDER BY id
     """
+
+    sql
+    |> add_to_sql_if_present(options, "limit")
+    |> add_to_sql_if_present(options, "offset")
   end
-  defp raw_sql(type, %{"only_baskets" => only_baskets}) do
+  defp raw_sql(type, %{"only_baskets" => only_baskets} = options) do
     only_baskets = only_baskets |> String.split(",")
-    ~s"""
+
+    sql = ~s"""
     #{select_all_from(type)}
     WHERE basket_key IN (#{basket_list_as_string(only_baskets)})
     ORDER BY id
     """
+
+    sql
+    |> add_to_sql_if_present(options, "limit")
+    |> add_to_sql_if_present(options, "offset")
   end
 
   defp select_all_from(type) do
@@ -97,5 +109,12 @@ defmodule ExtractionPoint.Exporter do
     baskets
     |> Enum.map(fn b -> "'#{b}'"end)
     |> Enum.join(",")
+  end
+
+  defp add_to_sql_if_present(sql, options, key) do
+    case Map.get(options, key) do
+      nil -> sql
+      value -> "#{sql} #{String.upcase(key)} #{value}"
+    end
   end
 end
