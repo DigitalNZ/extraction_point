@@ -42,7 +42,7 @@ defmodule ExtractionPointWeb.WebLinkController do
   def index(conn, params) do
     {columns, web_links} = Exporter.list_type(:web_link, params)
 
-    render(conn, :index, columns: columns, web_links: web_links)
+    render(conn, :index, columns: columns, web_links: web_links, meta: params)
   end
 
   def show(conn, %{"id" => id}) do

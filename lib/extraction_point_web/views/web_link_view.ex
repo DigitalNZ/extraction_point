@@ -2,8 +2,8 @@ defmodule ExtractionPointWeb.WebLinkView do
   use ExtractionPointWeb, :view
   alias ExtractionPointWeb.WebLinkView
 
-  def render("index.json", %{web_links: web_links}) do
-    %{data: render_many(web_links, WebLinkView, "web_link.json")}
+  def render("index.json", %{web_links: web_links, meta: meta}) do
+    %{meta: meta, data: render_many(web_links, WebLinkView, "web_link.json")}
   end
 
   def render("show.json", %{web_link: web_link}) do
