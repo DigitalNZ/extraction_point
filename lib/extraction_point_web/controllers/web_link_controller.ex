@@ -9,14 +9,14 @@ defmodule ExtractionPointWeb.WebLinkController do
 
   @bom :unicode.encoding_to_bom({:utf16, :little})
 
-  def index(%Plug.Conn{request_path: "/web-links.csv"} = conn, _params) do
+  def index(%Plug.Conn{request_path: "/web-links.csv"} = conn, params) do
     conn =
       conn
       |> put_resp_content_type("text/csv")
-      |> put_resp_header("content-disposition", ~s[inline; filename=web-links.csv"])
+      |> put_resp_header("content-disposition", ~s[inline; filename=web-links.csv])
       |> send_chunked(:ok)
 
-    Exporter.list_type(:web_link, fn columns, stream ->
+    Exporter.list_type(:web_link, params, fn columns, stream ->
       conn |> chunk(@bom)
 
       headers = [columns]
@@ -37,8 +37,8 @@ defmodule ExtractionPointWeb.WebLinkController do
     conn
   end
 
-  def index(conn, _params) do
-    {columns, web_links} = Exporter.list_type(:web_link)
+  def index(conn, params) do
+    {columns, web_links} = Exporter.list_type(:web_link, params)
 
     render(conn, :index, columns: columns, web_links: web_links)
   end
