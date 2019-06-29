@@ -41,7 +41,8 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     [{col, value}]
   end
 
-  def extract_update_pair(%ExtendedField{ftype: ft, label: l}, extended_content, false) when ft in @simple_types do
+  def extract_update_pair(%ExtendedField{ftype: ft, label: l}, extended_content, false)
+      when ft in @simple_types do
     {col, value} = simple_xml_parse(l, extended_content)
 
     [{col, value}]
@@ -51,7 +52,8 @@ defmodule ExtractionPoint.ExtendedField.Parse do
         %ExtendedField{ftype: ft, label: l, multiple: false},
         extended_content,
         true
-      ) when ft in @simple_types do
+      )
+      when ft in @simple_types do
     {label_key, col} = key_and_col(l)
     doc = sub_xml_for_key(extended_content, label_key)
 
@@ -157,8 +159,8 @@ defmodule ExtractionPoint.ExtendedField.Parse do
         %ExtendedField{ftype: ft, label: l, multiple: false},
         extended_content,
         _
-  )
-  when ft in @choice_types do
+      )
+      when ft in @choice_types do
     {label_key, col} = key_and_col(l)
 
     string = sub_xml_for_key(extended_content, label_key)
@@ -170,8 +172,8 @@ defmodule ExtractionPoint.ExtendedField.Parse do
         %ExtendedField{ftype: ft, label: l, multiple: true},
         extended_content,
         _
-  )
-    when ft in @choice_types do
+      )
+      when ft in @choice_types do
     {label_key, col} = l |> key_and_col()
 
     values =
@@ -273,6 +275,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   defp fetch_multiple_values(string, key, n, acc, extractor \\ &fetch_value/2)
   defp fetch_multiple_values(nil, _, _, acc, _), do: acc
+
   defp fetch_multiple_values(string, key, n, acc, extractor) do
     if String.contains?(string, "<#{n}>") do
       xml = Regex.run(~r/<#{n}[^>]*>(.*)<\/#{n}>/, string) |> List.last()
@@ -294,6 +297,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
   defp fetch_value(xml, key), do: xml |> resolved_xpath(~x"/#{key}/text()")
 
   defp fetch_labelled_value(nil, _), do: {nil, nil}
+
   defp fetch_labelled_value(xml, key) do
     label = xml |> resolved_xpath(~x"/#{key}/@label")
     value = xml |> resolved_xpath(~x"/#{key}/text()")
@@ -303,6 +307,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   defp fetch_choice_labelled_value_map(string, key, number \\ 1)
   defp fetch_choice_labelled_value_map(nil, _, _), do: nil
+
   defp fetch_choice_labelled_value_map(string, key, number) do
     {label, value} = extract_choice_label_value(string, key, number)
 
@@ -313,8 +318,13 @@ defmodule ExtractionPoint.ExtendedField.Parse do
   end
 
   defp extract_choice_label_value(nil, _, _), do: nil
+
   defp extract_choice_label_value(string, key, number) do
-    results = Regex.run(~r/<#{key}[^>]*><#{number} label=\"([^\"]*)\">([^>]*)<\/#{number}><\/#{key}>/, string)
+    results =
+      Regex.run(
+        ~r/<#{key}[^>]*><#{number} label=\"([^\"]*)\">([^>]*)<\/#{number}><\/#{key}>/,
+        string
+      )
 
     if Enum.any?(results) do
       {Enum.at(results, 1), Enum.at(results, 2)}
@@ -324,6 +334,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
   end
 
   defp fetch_map_value(nil, _), do: nil
+
   defp fetch_map_value(xml, key) do
     with {:ok, string} <- coordinates_as_string(xml, key),
          {:ok, coordinates} <- format_coordinates(string) do
@@ -353,6 +364,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
   defp fetch_address_value(xml, key), do: xml |> resolved_xpath(~x"/#{key}/address/text()")
 
   defp fetch_topic_type_value(nil, _), do: nil
+
   defp fetch_topic_type_value(xml, key) do
     {topic_label, url} = fetch_labelled_value(xml, key)
 
@@ -363,6 +375,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
   end
 
   def fetch_year_value(nil, _), do: nil
+
   def fetch_year_value(xml, key) do
     circa = xml |> resolved_xpath(~x"/#{key}/circa/text()")
     value = xml |> resolved_xpath(~x"/#{key}/value/text()")

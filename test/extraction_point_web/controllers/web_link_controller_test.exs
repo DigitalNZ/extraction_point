@@ -4,12 +4,8 @@ defmodule ExtractionPointWeb.WebLinkControllerTest do
   alias ExtractionPoint.WebLinks
   alias ExtractionPoint.WebLinks.WebLink
 
-  @create_attrs %{
-
-  }
-  @update_attrs %{
-
-  }
+  @create_attrs %{}
+  @update_attrs %{}
   @invalid_attrs %{}
 
   def fixture(:web_link) do
@@ -49,7 +45,10 @@ defmodule ExtractionPointWeb.WebLinkControllerTest do
   describe "update web_link" do
     setup [:create_web_link]
 
-    test "renders web_link when data is valid", %{conn: conn, web_link: %WebLink{id: id} = web_link} do
+    test "renders web_link when data is valid", %{
+      conn: conn,
+      web_link: %WebLink{id: id} = web_link
+    } do
       conn = put(conn, Routes.web_link_path(conn, :update, web_link), web_link: @update_attrs)
       assert %{"id" => ^id} = json_response(conn, 200)["data"]
 

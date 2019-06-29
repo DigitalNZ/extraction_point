@@ -7,11 +7,12 @@ defmodule ExtractionPoint.DataChange.PreviousUrlPatterns do
   end
 
   def path_patterns(type_path_key) do
-    statements = Enum.reduce(@path_roots, [], fn root, acc ->
-      acc ++
-      ["CONCAT('/', B.urlified_name, '/#{type_path_key}/#{root}/', T1.id),
+    statements =
+      Enum.reduce(@path_roots, [], fn root, acc ->
+        acc ++
+          ["CONCAT('/', B.urlified_name, '/#{type_path_key}/#{root}/', T1.id),
       CONCAT('/', B.urlified_name, '/#{type_path_key}/#{root}/', T1.id, '-*')"]
-    end)
+      end)
 
     Enum.join(statements, ",")
   end

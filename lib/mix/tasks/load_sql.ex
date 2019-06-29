@@ -15,17 +15,25 @@ defmodule Mix.Tasks.ExtractionPoint.LoadSql do
   This will use ecto to load the sql
   """
   def run([sql_file]) do
-    Mix.Task.run "ecto.create"
+    Mix.Task.run("ecto.create")
 
-    Mix.Task.run "app.start"
+    Mix.Task.run("app.start")
 
     IO.puts("Loading #{sql_file}...")
 
-    args = ["-U", Repo.config[:username],
-            "-h", Repo.config[:hostname],
-            "-p", to_string(Repo.config[:port]),
-            "--quiet", "--file", sql_file, "-vON_ERROR_STOP=1",
-            Repo.config[:database]]
+    args = [
+      "-U",
+      Repo.config()[:username],
+      "-h",
+      Repo.config()[:hostname],
+      "-p",
+      to_string(Repo.config()[:port]),
+      "--quiet",
+      "--file",
+      sql_file,
+      "-vON_ERROR_STOP=1",
+      Repo.config()[:database]
+    ]
 
     System.cmd("psql", args, env: [])
 

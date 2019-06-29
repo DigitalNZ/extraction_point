@@ -18,7 +18,9 @@ defmodule ExtractionPoint.Exporter do
   def list_type(type, options, process_stream) do
     query = raw_sql(type, options)
     stripped_options = options |> Map.delete("limit") |> Map.delete("offset")
-    query_for_columns = raw_sql(type, stripped_options)
+
+    query_for_columns =
+      raw_sql(type, stripped_options)
       |> add_to_sql_if_present(%{"limit" => 1}, "limit")
 
     # we do a separate query before batch stream so as to get columns dynamically
@@ -34,9 +36,11 @@ defmodule ExtractionPoint.Exporter do
 
     with {:ok, results} <- Ecto.Adapters.SQL.query(Repo, query, []) do
       columns = to_keys(results.columns)
-      row = columns
-      |> map_rows(results.rows)
-      |> List.last()
+
+      row =
+        columns
+        |> map_rows(results.rows)
+        |> List.last()
 
       {columns, row}
     end
@@ -74,6 +78,7 @@ defmodule ExtractionPoint.Exporter do
   defp raw_sql(type, options) when options == %{} do
     "#{select_all_from(type)} ORDER BY id"
   end
+
   defp raw_sql(type, %{"except_baskets" => except_baskets} = options) do
     except_baskets = except_baskets |> String.split(",")
 
@@ -87,6 +92,7 @@ defmodule ExtractionPoint.Exporter do
     |> add_to_sql_if_present(options, "limit")
     |> add_to_sql_if_present(options, "offset")
   end
+
   defp raw_sql(type, %{"only_baskets" => only_baskets} = options) do
     only_baskets = only_baskets |> String.split(",")
 
@@ -107,14 +113,19 @@ defmodule ExtractionPoint.Exporter do
 
   defp basket_list_as_string(baskets) do
     baskets
-    |> Enum.map(fn b -> "'#{b}'"end)
+    |> Enum.map(fn b -> "'#{b}'" end)
     |> Enum.join(",")
   end
 
+  # values are only intended to be integers
+  # adding rudimentary sql injection protection
+  # (even though this isn't meant to be public facing app)
+  # which will throw error if non integer submitted
   defp add_to_sql_if_present(sql, options, key) do
     case Map.get(options, key) do
       nil -> sql
-      value -> "#{sql} #{String.upcase(key)} #{value}"
+      value when is_integer(value) -> "#{sql} #{String.upcase(key)} #{value}"
+      value -> "#{sql} #{String.upcase(key)} #{String.to_integer(value)}"
     end
   end
 end

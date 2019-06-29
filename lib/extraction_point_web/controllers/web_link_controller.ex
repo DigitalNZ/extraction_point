@@ -19,14 +19,16 @@ defmodule ExtractionPointWeb.WebLinkController do
     Exporter.list_type(:web_link, params, fn columns, stream ->
       conn |> chunk(@bom)
 
-      headers = [columns]
+      headers =
+        [columns]
         |> CSVParser.dump_to_iodata()
         |> :unicode.characters_to_binary(:utf8, {:utf16, :little})
 
       conn |> chunk(headers)
 
       for result <- stream do
-        csv_rows = result.rows
+        csv_rows =
+          result.rows
           |> CSVParser.dump_to_iodata()
           |> :unicode.characters_to_binary(:utf8, {:utf16, :little})
 

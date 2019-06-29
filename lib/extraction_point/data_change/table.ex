@@ -50,7 +50,10 @@ defmodule ExtractionPoint.DataChange.Table do
         id: t.id,
         extended_content: t.extended_content,
         # determine if has_any_multiples in all of extended_content
-        has_any_multiples: fragment("(extended_content LIKE '%_multiple%' OR extended_content LIKE '%<1 label%') as has_any_multiples")
+        has_any_multiples:
+          fragment(
+            "(extended_content LIKE '%_multiple%' OR extended_content LIKE '%<1 label%') as has_any_multiples"
+          )
       },
       where: not is_nil(t.extended_content)
     )
