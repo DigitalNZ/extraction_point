@@ -150,11 +150,13 @@ defmodule ExtractionPoint.ExtendedField.Parse do
   end
 
   # choice types themselves have the invalid xml number based elements
-  # so always has_any_multiples will be true for them
+  # so always has_any_multiples should be true for them, but...
+  # if extended_content doesn't have even an empty value for the choice field
+  # has_any_multiples may be false
   def extract_update_pair(
         %ExtendedField{ftype: ft, label: l, multiple: false},
         extended_content,
-        true
+        _
   )
   when ft in @choice_types do
     {label_key, col} = key_and_col(l)
@@ -269,7 +271,9 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     ]
   end
 
-  defp fetch_multiple_values(string, key, n, acc, extractor \\ &fetch_value/2) do
+  defp fetch_multiple_values(string, key, n, acc, extractor \\ &fetch_value/2)
+  defp fetch_multiple_values(nil, _, _, acc, _), do: acc
+  defp fetch_multiple_values(string, key, n, acc, extractor) do
     if String.contains?(string, "<#{n}>") do
       xml = Regex.run(~r/<#{n}[^>]*>(.*)<\/#{n}>/, string) |> List.last()
 
@@ -286,8 +290,10 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     {key, col}
   end
 
+  defp fetch_value(nil, _), do: nil
   defp fetch_value(xml, key), do: xml |> resolved_xpath(~x"/#{key}/text()")
 
+  defp fetch_labelled_value(nil, _), do: {nil, nil}
   defp fetch_labelled_value(xml, key) do
     label = xml |> resolved_xpath(~x"/#{key}/@label")
     value = xml |> resolved_xpath(~x"/#{key}/text()")
@@ -295,7 +301,9 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     {label, value}
   end
 
-  defp fetch_choice_labelled_value_map(string, key, number \\ 1) do
+  defp fetch_choice_labelled_value_map(string, key, number \\ 1)
+  defp fetch_choice_labelled_value_map(nil, _, _), do: nil
+  defp fetch_choice_labelled_value_map(string, key, number) do
     {label, value} = extract_choice_label_value(string, key, number)
 
     case {label, value} do
@@ -304,6 +312,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     end
   end
 
+  defp extract_choice_label_value(nil, _, _), do: nil
   defp extract_choice_label_value(string, key, number) do
     results = Regex.run(~r/<#{key}[^>]*><#{number} label=\"([^\"]*)\">([^>]*)<\/#{number}><\/#{key}>/, string)
 
@@ -314,6 +323,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     end
   end
 
+  defp fetch_map_value(nil, _), do: nil
   defp fetch_map_value(xml, key) do
     with {:ok, string} <- coordinates_as_string(xml, key),
          {:ok, coordinates} <- format_coordinates(string) do
@@ -339,8 +349,10 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     end
   end
 
+  defp fetch_address_value(nil, _), do: nil
   defp fetch_address_value(xml, key), do: xml |> resolved_xpath(~x"/#{key}/address/text()")
 
+  defp fetch_topic_type_value(nil, _), do: nil
   defp fetch_topic_type_value(xml, key) do
     {topic_label, url} = fetch_labelled_value(xml, key)
 
@@ -350,6 +362,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     end
   end
 
+  def fetch_year_value(nil, _), do: nil
   def fetch_year_value(xml, key) do
     circa = xml |> resolved_xpath(~x"/#{key}/circa/text()")
     value = xml |> resolved_xpath(~x"/#{key}/value/text()")
@@ -376,10 +389,17 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   # since some other extended field is a multiple, we can't xml parse overall extended_content
   # as it invalid xml, get substring for field first
-  defp sub_xml_for_key(string, key), do: Regex.run(~r/<#{key}[^>]*>.*<\/#{key}>/, string) |> List.last()
+  defp sub_xml_for_key(string, key) do
+    matches = Regex.run(~r/<#{key}[^>]*>.*<\/#{key}>/, string)
 
-  defp sub_xml_for_multiple_key(string, key),
-    do: Regex.run(~r/<#{key}_multiple[^>]*>(.*)<\/#{key}_multiple>/, string) |> List.last()
+    if matches, do: matches |> List.last()
+  end
+
+  defp sub_xml_for_multiple_key(string, key) do
+    matches = Regex.run(~r/<#{key}_multiple[^>]*>(.*)<\/#{key}_multiple>/, string)
+
+    if matches, do: matches |> List.last()
+  end
 
   defp populated_string_or_nil(""), do: nil
   defp populated_string_or_nil(string), do: string
