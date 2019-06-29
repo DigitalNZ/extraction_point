@@ -31,6 +31,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractAudioRecordings do
   T1.extended_content FROM audio_recordings T1
   INNER JOIN baskets B ON (basket_id = B.id)
   LEFT OUTER JOIN licenses L ON (T1.license_id = L.id)
+  WHERE T1.private::boolean = false OR T1.private IS NULL
   """
 
   def up do

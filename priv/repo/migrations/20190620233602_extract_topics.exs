@@ -33,6 +33,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractTopics do
   INNER JOIN baskets B ON (basket_id = B.id)
   LEFT OUTER JOIN licenses L ON (T1.license_id = L.id)
   WHERE topic_type_id = #{@id_placeholder}
+  AND T1.private::boolean = false OR T1.private IS NULL
   """
 
   def up do
