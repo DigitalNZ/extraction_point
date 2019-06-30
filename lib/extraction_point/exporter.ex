@@ -1,7 +1,7 @@
 defmodule ExtractionPoint.Exporter do
-  alias ExtractionPoint.Repo
+  import ExtractionPoint.ExportUtils
 
-  @table_name_prefix "extracted"
+  alias ExtractionPoint.Repo
 
   # assume pagination rather than stream for json, etc.
   def list_type(type, options \\ %{}) do
@@ -44,27 +44,6 @@ defmodule ExtractionPoint.Exporter do
 
       {columns, row}
     end
-  end
-
-  def map_rows(columns, rows) do
-    Enum.map(rows, fn row ->
-      Enum.zip(columns, row)
-      |> Map.new()
-    end)
-  end
-
-  defp to_table_name(type) do
-    type
-    |> to_string()
-    |> Inflex.pluralize()
-    |> List.wrap()
-    |> Enum.concat([@table_name_prefix])
-    |> Enum.reverse()
-    |> Enum.join("_")
-  end
-
-  defp to_keys(columns) do
-    Enum.map(columns, fn c -> String.to_atom(c) end)
   end
 
   # max_rows: 500 by default

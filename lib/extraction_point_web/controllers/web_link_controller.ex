@@ -5,8 +5,6 @@ defmodule ExtractionPointWeb.WebLinkController do
 
   action_fallback ExtractionPointWeb.FallbackController
 
-  NimbleCSV.define(CSVParser, separator: "\t")
-
   @bom :unicode.encoding_to_bom({:utf16, :little})
 
   def index(%Plug.Conn{request_path: "/web-links.csv"} = conn, params) do
