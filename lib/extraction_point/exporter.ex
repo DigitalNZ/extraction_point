@@ -86,6 +86,10 @@ defmodule ExtractionPoint.Exporter do
     |> add_to_sql_if_present(options, "offset")
   end
 
+  defp raw_sql(type, %{"type_table" => _}) do
+    "#{select_all_from(type)} ORDER BY id"
+  end
+
   defp select_all_from(type) do
     "SELECT * FROM #{to_table_name(type)}"
   end

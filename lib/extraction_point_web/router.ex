@@ -16,6 +16,8 @@ defmodule ExtractionPointWeb.Router do
     resources "/documents.csv", DocumentController, only: [:index]
     resources "/still-images", StillImageController, only: [:show, :index]
     resources "/still-images.csv", StillImageController, only: [:index]
+    resources "/topics", TopicController, only: [:show, :index]
+    resources "/topics.csv", TopicController, only: [:index]
     resources "/users", UserController, only: [:show, :index]
     resources "/users.csv", UserController, only: [:index]
     resources "/videos", VideoController, only: [:show, :index]
