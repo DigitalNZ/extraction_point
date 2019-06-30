@@ -35,7 +35,7 @@ defmodule ExtractionPoint.Repo.Migrations.ExtractStillImages do
   INNER JOIN baskets B ON (basket_id = B.id)
   INNER JOIN image_files O ON (T1.id = O.still_image_id AND O.parent_id IS NULL)
   LEFT OUTER JOIN licenses L ON (T1.license_id = L.id)
-  WHERE T1.private::boolean = false OR T1.private IS NULL
+  WHERE T1.title != 'No Public Version Available'
   """
 
   def up do
