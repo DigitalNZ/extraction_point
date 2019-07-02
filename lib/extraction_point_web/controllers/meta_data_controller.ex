@@ -1,6 +1,8 @@
 defmodule ExtractionPointWeb.MetaDataController do
   use ExtractionPointWeb, :controller
 
+  import ExtractionPoint.CSVUtils
+
   alias ExtractionPoint.Meta
 
   action_fallback ExtractionPointWeb.FallbackController
@@ -34,7 +36,7 @@ defmodule ExtractionPointWeb.MetaDataController do
       meta
       |> Enum.map(fn m -> Map.values(m) end)
       |> Enum.map(fn m -> remove_module_value(m) end)
-      |> Enum.map(fn m -> values_to_strings(m) end)
+      |> Enum.map(fn m -> values_to_stringables(m) end)
       |> CSVParser.dump_to_iodata()
       |> :unicode.characters_to_binary(:utf8, {:utf16, :little})
 
@@ -45,15 +47,6 @@ defmodule ExtractionPointWeb.MetaDataController do
 
   def index(conn, _params) do
     render(conn, :index, meta: Meta.report())
-  end
-
-  defp values_to_strings(row) do
-    row |> Enum.map(fn v ->
-      case v do
-        value when is_bitstring(value) -> value
-        _ -> inspect(v)
-      end
-    end)
   end
 
   defp remove_module_value(row) do

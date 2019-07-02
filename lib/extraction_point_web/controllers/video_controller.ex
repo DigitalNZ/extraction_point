@@ -1,6 +1,8 @@
 defmodule ExtractionPointWeb.VideoController do
   use ExtractionPointWeb, :controller
 
+  import ExtractionPoint.CSVUtils
+
   alias ExtractionPoint.Exporter
 
   action_fallback ExtractionPointWeb.FallbackController
@@ -27,6 +29,7 @@ defmodule ExtractionPointWeb.VideoController do
       for result <- stream do
         csv_rows =
           result.rows
+          |> Enum.map(fn row -> values_to_stringables(row) end)
           |> CSVParser.dump_to_iodata()
           |> :unicode.characters_to_binary(:utf8, {:utf16, :little})
 
