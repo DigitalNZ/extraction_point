@@ -5,6 +5,8 @@ defmodule ExtractionPoint.ExportUtils do
 
   def map_rows(columns, rows) do
     Enum.map(rows, fn row ->
+      row = resolve_values(row)
+
       Enum.zip(columns, row)
       |> Map.new()
     end)
@@ -22,5 +24,18 @@ defmodule ExtractionPoint.ExportUtils do
 
   def to_keys(columns) do
     Enum.map(columns, fn c -> String.to_atom(c) end)
+  end
+
+  defp resolve_values(row) do
+    Enum.map(row, fn value ->
+      modify_value_if_necessary(value)
+    end)
+  end
+
+  defp modify_value_if_necessary(value) do
+    case value do
+      %NaiveDateTime{} -> value |> NaiveDateTime.truncate(:second)
+      _ -> value
+    end
   end
 end
