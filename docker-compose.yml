@@ -21,3 +21,13 @@ services:
       - 15432:5432
     volumes:
       - ./docker/data/postgres:/var/lib/postgresql/data
+  requestor:
+    build:
+      context: .
+      dockerfile: Dockerfile-curl
+    depends_on:
+      - app
+    volumes:
+      - type: bind
+        source: .
+        target: /app

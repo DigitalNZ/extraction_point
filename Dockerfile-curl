@@ -1,0 +1,5 @@
+FROM appropriate/curl:latest
+
+WORKDIR /app
+
+ADD ./ /app/
