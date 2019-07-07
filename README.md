@@ -181,7 +181,7 @@ further downloads.
 ./bin/extract_as_json.sh meta meta.json # this says to request the meta report and output it to a file named meta.json
 ```
 
-For the meta report, I recommend using json output. By default the API
+`json` is recommeneded for the meta report. By default the API
 outputs json without extra white space which is hard to read. Either
 open the file in your favorite editor and use the editor's capability
 to pretty print the json or if you have
@@ -211,10 +211,101 @@ by Excel when the data contains unicode characters from what we have
 read. Outside of Excel, most comma separated values parser libraries
 should allow for specifying tab as a delimiter.
 
-* download standard content types
-* talk about options to limit to a basket
-* talk about pagination with json
-* download topic types
+#### Downloading the standard content types
+
+Kete standard content types are `audio_recordings`, `documents`,
+`still_images`, and `web_links`. There are also two special case
+content types, `comments` which we are skipping for now, and `users`
+which we'll cover later.
+
+Start by downloading these types. Check the meta report for those that
+have a `count` of more than zero for their content.
+
+Here's how to download `still_images`, the same pattern can be used
+for the other content types.
+
+```sh
+./bin/extract_as_json.sh still-images
+```
+
+First use the appropriate export script, in this case
+`bin/extract_as_json.sh`, but if you want `tsv`, use
+`bin/extract_as_tsv.sh`. Then specify the type in url style dash
+separated plural form (i.e. kebab case).
+
+There are two additional arguments that you can specify for the
+script. Output file and options.
+
+Output file is relative path of the file you would like created with
+the data.
+
+```sh
+./bin/extract_as_json.sh still-images path-to/file.json
+```
+
+Options are in the form of a URL query string and they should be
+separated by an escaped appersand, `\&`. They specify any
+options you want for manipulating the data.
+
+Here are the options currently supported:
+
+Option | Notes
+----- | -----
+`except_baskets` | comma separated (no spaces) list of basket keys that should be excluded from results
+`only_baskets` | comma separated (no spaces) list of basket keys of those baskets that data should be limited to
+`limit` | number of results to limit to, used in combination with `offset` to paginate results
+`offset` | number of record in results to start after, E.g. when used in combination with `limit`, `limit=10\&offset=10` would say to only return results 11 - 20 or "page 2"
+
+Arguments for the scripts are positional, so options require that the
+output file parameter is also specified!
+
+Here's how to request the first and second 100 results for still images in two
+successive files:
+
+```sh
+./bin/extract_as_json.sh still-images still-images-page-1.json limit=100\&offset=0
+./bin/extract_as_json.sh still-images still-images-page-2.json limit=100\&offset=100
+```
+
+Using limit and offset for pagination is probably most useful `json`.
+
+Here's how to request results in `tsv` for all documents only in a
+specific basket:
+
+```sh
+./bin/extract_as_json.sh documents community-group-a-documents.json only_baskets=community_group_a
+
+```
+
+Here's how to request results in `tsv` for all web links as long as
+they are not in the generic "about" and "help" baskets:
+
+```sh
+./bin/extract_as_json.sh web-links web-links.json except_baskets=about,help
+
+```
+
+#### Downloading topic types
+
+The other types listed in the meta report, except for the special
+content type`users` and the `relations` type for linking records which
+we'll cover last, are topic types.
+
+Some of these come standard with Kete, such as `topic` while others
+are dynamicall added by site admins and therefore their names are not
+known ahead of time.
+
+You can derive the type name for a topic type by looking at the
+`table_name` in the meta report and dropping the `extracted_` prefix.
+
+How you download the data for a type is the same as for content types
+_except you use singular form for the type argument_! Here's how to
+get the person type's data in `json` with limit and offset:
+
+```sh
+./bin/extract_as_json.sh person people-page-1.json limit=100\&offset=0
+```
+
 * download users
 * download relations
 * shutting down docker-compose
