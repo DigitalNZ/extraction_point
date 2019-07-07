@@ -31,7 +31,7 @@ fi
 if [[ -n "${OUTPUT// /}" ]]; then
     command="$command --output $OUTPUT"
 else
-    command="$command --output $TYPE.csv"
+    command="$command --output $TYPE.tsv"
 fi
 
 echo $command
