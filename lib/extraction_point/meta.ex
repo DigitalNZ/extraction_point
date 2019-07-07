@@ -33,8 +33,8 @@ defmodule ExtractionPoint.Meta do
       |> Repo.all()
       |> Enum.map(fn type ->
         table_name_root = to_plural_key(type.name)
+        type_key = to_key(type.name)
         table_name = "#{prefix()}_#{table_name_root}"
-        url_root = table_name_to_base_url(table_name_root)
         [count, baskets] = get_count_and_baskets(table_name)
 
         %__MODULE__{
@@ -42,8 +42,8 @@ defmodule ExtractionPoint.Meta do
           count: count,
           within_baskets: baskets,
           columns: get_columns_and_types(table_name),
-          url_json: "/topics?type_table=#{url_root}",
-          url_csv: "/topics.csv?type_table=#{url_root}"
+          url_json: "/topics?topic_type=#{type_key}",
+          url_csv: "/topics.csv?topic_type=#{type_key}"
         }
       end)
 
