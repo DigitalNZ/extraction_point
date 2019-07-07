@@ -14,6 +14,8 @@ defmodule ExtractionPointWeb.Router do
     resources "/audio-recordings.csv", AudioRecordingController, only: [:index]
     resources "/documents", DocumentController, only: [:show, :index]
     resources "/documents.csv", DocumentController, only: [:index]
+    resources "/relations", RelationController, only: [:show, :index]
+    resources "/relations.csv", RelationController, only: [:index]
     resources "/still-images", StillImageController, only: [:show, :index]
     resources "/still-images.csv", StillImageController, only: [:index]
     resources "/topics", TopicController, only: [:show, :index]
