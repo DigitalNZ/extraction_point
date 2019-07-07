@@ -31,7 +31,7 @@ A typical workflow will look like this:
 Extraction Point or the workflow you use should be straight forward to
 modify or extend for a given projects needs.
 
-See sections below for in detail instructions or guidance.
+See sections below for detailed instructions or guidance.
 
 _Note: This is a non-destructive set of tools and the original tables and data (along with new versions of the data) are available for further querying or use via SQL, etc. or even using common tools such as `pg_dump` to create full or partial back up of the database to be imported elsewhere._
 
@@ -62,6 +62,11 @@ other changes are needed.
 Again, keep in mind that all of the original tables and data are
 available to work around these limitations. The project also welcomes
 open source contributions or further funding to improve it.
+
+## Installation
+
+* set up Docker and docker-compose locally
+* clone this repository and `cd` into its directory
 
 ## Usage
 
@@ -134,7 +139,7 @@ Column | Notes
 `license_id` | id of license in legacy licents table
 `license` | text title of license for convenience
 `previous_oai_identifier` | unique id in Kete's included OAI-PMH repository - useful for tracking where the record was previously in any aggregation system, E.g. Digital New Zealand, that harvested the repository
-`previous_url_patterns` | where the item was previous found in Kete for various actions, useful for setting up redirects to new system
+`previous_url_patterns` | url patterns (using glob wildcards) for where the item was previous found in Kete for various actions, useful for setting up redirects to new system
 `creator_id` | id of user who created item in legacy users table
 `creator_login` | unique login of user who created item in legacy users table, for convenience
 `creator_name` | user chosen display name of user who created item in legacy users table, for convenience
@@ -212,6 +217,7 @@ should allow for specifying tab as a delimiter.
 * download topic types
 * download users
 * download relations
+* shutting down docker-compose
 
 ### Recommended order of import into new systems
 
