@@ -221,8 +221,8 @@ which we'll cover later.
 Start by downloading these types. Check the meta report for those that
 have a `count` of more than zero for their content.
 
-Here's how to download `still_images`, the same pattern can be used
-for the other content types.
+Here's the most basic way to download `still_images`, the same pattern
+can be used for the other content types.
 
 ```sh
 ./bin/extract_as_json.sh still-images
@@ -267,7 +267,8 @@ successive files:
 ./bin/extract_as_json.sh still-images still-images-page-2.json limit=100\&offset=100
 ```
 
-Using limit and offset for pagination is probably most useful `json`.
+Using limit and offset for pagination is probably most useful for
+breaking up `json` into more managable chunks.
 
 Here's how to request results in `tsv` for all documents only in a
 specific basket:
@@ -306,9 +307,36 @@ get the person type's data in `json` with limit and offset:
 ./bin/extract_as_json.sh person people-page-1.json limit=100\&offset=0
 ```
 
-* download users
-* download relations
-* shutting down docker-compose
+#### Downloading users and relations
+
+You may also want to bring across `users` for your new system as well
+as the mapping of which pieces of content are related to which topics
+via the `relations` data.
+
+The same scripts will work for them, however the `except_baskets`
+and `only_baskets` options are not relevant.
+
+E.g.
+
+```sh
+./bin/extract_as_json.sh users # or relations as type
+```
+
+will give you the data for each.
+
+_Note: extracted `users` data doesn't include the hashed passwords,
+although they are available in the legacy table. Email addresses are
+included, so be careful not expose extracted data publicly.
+
+That's everything at this point.
+
+#### Shutting down temporary API and cleaning out docker images
+
+Once you are done with downlding data from the API, you can shut it
+down in the shell it was running in with `control-c control-c`.
+
+Then you can clean out any stuff `docker-compose up` left around with
+`docker-compose down`.
 
 ### Recommended order of import into new systems
 
@@ -319,7 +347,8 @@ get the person type's data in `json` with limit and offset:
 ### Mapping corresponding audio, document, image, and video files to data
 
 * content types with associated files that were uploaded to Kete have
-  a `relative_file_path` column
+  a `relative_file_path` column (`still_images` have different column
+  names, but same idea, should be self explanatory)
 * you have to prefix this path with appropriate path that corresponds
   to whether it is public or private and its type for where the file
   will be found in the exported files from Kete Extraction. E.g. if
