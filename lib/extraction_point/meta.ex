@@ -47,9 +47,25 @@ defmodule ExtractionPoint.Meta do
         }
       end)
 
-    # distinct basket_keys
+    relations =
+      [%{name: "relations"}]
+      |> Enum.map(fn type ->
+        table_name_root = to_plural_key(type.name)
+        type_key = to_key(type.name)
+        table_name = "#{prefix()}_#{table_name_root}"
+        [count, baskets] = get_count_and_baskets(table_name)
 
-    content_types ++ topic_types
+        %__MODULE__{
+          table_name: table_name,
+          count: count,
+          within_baskets: baskets,
+          columns: get_columns_and_types(table_name),
+          url_json: "/relations",
+          url_csv: "/relations.csv"
+        }
+      end)
+
+    content_types ++ topic_types ++ relations
   end
 
   defp content_type_base_table_name(class_name) do
@@ -67,20 +83,30 @@ defmodule ExtractionPoint.Meta do
 
   defp get_count(table_name) do
     from(t in table_name,
-      select: count(t.id))
+      select: count(t.id)
+    )
     |> Repo.one()
   end
 
   defp get_count_and_baskets("extracted_users") do
     [get_count("users"), "N/A"]
   end
+
+  defp get_count_and_baskets("extracted_relations") do
+    [get_count("extracted_relations"), "N/A"]
+  end
+
   defp get_count_and_baskets(table_name) do
     query = from(t in table_name, select: fragment("distinct(basket_key)"))
     [get_count(table_name), query |> Repo.all()]
   end
 
   defp get_columns_and_types(table_name) do
-    query = "select column_name, data_type from information_schema.columns where table_name = '#{table_name}'"
+    query =
+      "select column_name, data_type from information_schema.columns where table_name = '#{
+        table_name
+      }'"
+
     with {:ok, results} <- Ecto.Adapters.SQL.query(Repo, query, []) do
       columns = to_keys(results.columns)
 

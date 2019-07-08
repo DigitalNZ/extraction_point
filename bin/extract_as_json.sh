@@ -11,7 +11,7 @@ command="$command_root \"Accept: application/json\" -X GET \"http://app:4000/"
 
 case $TYPE in
     meta) command=$command;;
-    audio-recordings | documents | still-images | vidoes | web-links) command="$command$TYPE";;
+    audio-recordings | documents | still-images | vidoes | web-links | users | relations) command="$command$TYPE";;
     *) topic_stub="topics?topic_type=$TYPE"; command="$command$topic_stub";;
 esac
 
