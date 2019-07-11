@@ -307,6 +307,16 @@ get the person type's data in `json` with limit and offset:
 ./bin/extract_as_json.sh person people-page-1.json limit=100\&offset=0
 ```
 
+##### Known issues
+
+Topic type names are expected to be in singular form, e.g. "Town",
+rather than plural like "Towns". Because of this convention, the
+extraction process will have some unexpected naming for types and
+tables.
+
+We recommend renaming the topic type name to singular form before
+running the data export step or directly in the resulting sql export file.
+
 #### Downloading users and relations
 
 You may also want to bring across `users` for your new system as well
