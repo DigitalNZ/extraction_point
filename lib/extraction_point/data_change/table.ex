@@ -48,12 +48,7 @@ defmodule ExtractionPoint.DataChange.Table do
     from(t in table_name,
       select: %{
         id: t.id,
-        extended_content: t.extended_content,
-        # determine if has_any_multiples in all of extended_content
-        has_any_multiples:
-          fragment(
-            "(extended_content LIKE '%_multiple%' OR extended_content LIKE '%<1 label%') as has_any_multiples"
-          )
+        extended_content: t.extended_content
       },
       where: not is_nil(t.extended_content)
     )
@@ -64,7 +59,7 @@ defmodule ExtractionPoint.DataChange.Table do
       extended_fields,
       [],
       fn ef, acc ->
-        case extract_update_pair(ef, row.extended_content, row.has_any_multiples) do
+        case extract_update_pair(ef, row.extended_content) do
           nil -> acc
           [nil] -> acc
           [{_, nil}] -> acc

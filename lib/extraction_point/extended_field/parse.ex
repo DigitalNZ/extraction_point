@@ -24,15 +24,9 @@ defmodule ExtractionPoint.ExtendedField.Parse do
   # last parameter is "has_any_multiples" for extended content
   # if false, we can use xpath because extended_content should be valid xml
   # if true, we have to extract substring of xml before using xpath
-  def extract_update_pair(%ExtendedField{ftype: ft, label: l}, extended_content, false)
-      when ft in @boolean_types do
-    {col, value} = simple_xml_parse(l, extended_content)
-
-    [{col, resolve_to_boolean(value)}]
-  end
 
   # booleans can never be a multiple
-  def extract_update_pair(%ExtendedField{ftype: ft, label: l}, extended_content, true)
+  def extract_update_pair(%ExtendedField{ftype: ft, label: l}, extended_content)
       when ft in @boolean_types do
     {label_key, col} = key_and_col(l)
     doc = sub_xml_for_key(extended_content, label_key)
@@ -41,18 +35,10 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     [{col, value}]
   end
 
-  def extract_update_pair(%ExtendedField{ftype: ft, label: l}, extended_content, false)
-      when ft in @simple_types do
-    {col, value} = simple_xml_parse(l, extended_content)
-
-    [{col, value}]
-  end
-
   def extract_update_pair(
         %ExtendedField{ftype: ft, label: l, multiple: false},
-        extended_content,
-        true
-      )
+        extended_content
+     )
       when ft in @simple_types do
     {label_key, col} = key_and_col(l)
     doc = sub_xml_for_key(extended_content, label_key)
@@ -62,8 +48,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   def extract_update_pair(
         %ExtendedField{ftype: ft, label: l, multiple: true},
-        extended_content,
-        _
+        extended_content
       )
       when ft in @simple_types do
     {label_key, col} = l |> key_and_col()
@@ -80,16 +65,9 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     end
   end
 
-  def extract_update_pair(%ExtendedField{ftype: "year", label: l}, extended_content, false) do
-    {label_key, col} = key_and_col(l)
-
-    [{col, fetch_year_value(extended_content, label_key)}]
-  end
-
   def extract_update_pair(
         %ExtendedField{ftype: "year", label: l, multiple: false},
-        extended_content,
-        true
+        extended_content
       ) do
     {label_key, col} = key_and_col(l)
 
@@ -100,8 +78,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   def extract_update_pair(
         %ExtendedField{ftype: "year", label: l, multiple: true},
-        extended_content,
-        _
+        extended_content
       ) do
     {label_key, col} = key_and_col(l)
 
@@ -115,19 +92,8 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   # ftype is either topic_type or choice type
   def extract_update_pair(
-        %ExtendedField{ftype: "topic_type", label: l},
-        extended_content,
-        false
-      ) do
-    {label_key, col} = key_and_col(l)
-
-    [{col, fetch_topic_type_value(extended_content, label_key)}]
-  end
-
-  def extract_update_pair(
         %ExtendedField{ftype: "topic_type", label: l, multiple: false},
-        extended_content,
-        true
+        extended_content
       ) do
     {label_key, col} = key_and_col(l)
 
@@ -138,8 +104,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   def extract_update_pair(
         %ExtendedField{ftype: "topic_type", label: l, multiple: true},
-        extended_content,
-        _
+        extended_content
       ) do
     {label_key, col} = l |> key_and_col()
 
@@ -157,8 +122,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
   # has_any_multiples may be false
   def extract_update_pair(
         %ExtendedField{ftype: ft, label: l, multiple: false},
-        extended_content,
-        _
+        extended_content
       )
       when ft in @choice_types do
     {label_key, col} = key_and_col(l)
@@ -170,8 +134,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   def extract_update_pair(
         %ExtendedField{ftype: ft, label: l, multiple: true},
-        extended_content,
-        _
+        extended_content
       )
       when ft in @choice_types do
     {label_key, col} = l |> key_and_col()
@@ -184,16 +147,9 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     [{col, values}]
   end
 
-  def extract_update_pair(%ExtendedField{ftype: "map", label: l}, extended_content, false) do
-    {label_key, col} = key_and_col(l)
-
-    [{col, fetch_map_value(extended_content, label_key)}]
-  end
-
   def extract_update_pair(
         %ExtendedField{ftype: "map", label: l, multiple: false},
-        extended_content,
-        true
+        extended_content
       ) do
     {label_key, col} = key_and_col(l)
 
@@ -204,8 +160,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   def extract_update_pair(
         %ExtendedField{ftype: "map", label: l, multiple: true},
-        extended_content,
-        _
+        extended_content
       ) do
     {label_key, col} = l |> key_and_col()
 
@@ -217,26 +172,9 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     [{col, values}]
   end
 
-  def extract_update_pair(%ExtendedField{ftype: "map_address", label: l}, extended_content, false) do
-    key_stub = to_key(l)
-    key_coordinates = "#{key_stub}_coordinates"
-    key_address = "#{key_stub}_address"
-
-    coordinates = fetch_map_value(extended_content, key_stub)
-    address = fetch_address_value(extended_content, key_stub) |> populated_string_or_nil()
-
-    if not is_nil(coordinates) or not is_nil(address) do
-      [
-        {String.to_atom(key_coordinates), coordinates},
-        {String.to_atom(key_address), address}
-      ]
-    end
-  end
-
   def extract_update_pair(
         %ExtendedField{ftype: "map_address", label: l, multiple: false},
-        extended_content,
-        true
+        extended_content
       ) do
     key_stub = to_key(l)
     key_coordinates = "#{key_stub}_coordinates"
@@ -256,8 +194,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
 
   def extract_update_pair(
         %ExtendedField{ftype: "map_address", label: l, multiple: true},
-        extended_content,
-        _
+        extended_content
       ) do
     key_stub = to_key(l)
     key_coordinates = "#{key_stub}_coordinates"
@@ -294,7 +231,11 @@ defmodule ExtractionPoint.ExtendedField.Parse do
   end
 
   defp fetch_value(nil, _), do: nil
-  defp fetch_value(xml, key), do: xml |> resolved_xpath(~x"/#{key}/text()")
+  defp fetch_value(xml, key) do
+    xml
+    |> sub_xml_for_key(key)
+    |> resolved_xpath(~x"/#{key}/text()")
+  end
 
   defp fetch_labelled_value(nil, _), do: {nil, nil}
 
@@ -389,12 +330,6 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     else
       xml |> resolved_xpath(~x"/#{key}/text()")
     end
-  end
-
-  defp simple_xml_parse(label, xml) do
-    {key, col} = key_and_col(label)
-
-    {col, fetch_value(xml, key)}
   end
 
   defp resolve_to_boolean("yes"), do: true
