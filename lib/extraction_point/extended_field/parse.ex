@@ -267,10 +267,10 @@ defmodule ExtractionPoint.ExtendedField.Parse do
         string
       )
 
-    if Enum.any?(results) do
-      {Enum.at(results, 1), Enum.at(results, 2)}
+    if is_nil(results) or not Enum.any?(results) do
+      {nil, nil}
     else
-      nil
+      {Enum.at(results, 1), Enum.at(results, 2)}
     end
   end
 
