@@ -89,7 +89,7 @@ defmodule ExtractionPoint.ExtendedField do
 
   def add_to_table_sql(%__MODULE__{ftype: "map", label: l, multiple: false}, table_name) do
     # this constrains the format to "standard GPS" (epsg4326) e.g. coordinate pair {longitude,latitude}
-    ["SELECT AddGeometryColumn ('#{table_name}','#{l}',4326,'POINT',2)"]
+    ["SELECT AddGeometryColumn ('#{table_name}','#{to_key(l)}',4326,'POINT',2)"]
   end
 
   # in order to add multiple of geo, we don't constrain it to specific format here
