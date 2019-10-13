@@ -402,6 +402,29 @@ for interacting with the application via Elixir:
 docker-compose run app iex -S mix
 ```
 
+### Tips and Tricks
+
+If you run the `extraction_point.load_sql` command and it fails with
+something like this:
+
+``` sh
+ERROR:  invalid byte sequence for encoding "UTF8": ...
+```
+
+then you may have data that has not been properly encoded when it was
+added to the database. The most likely scenario is that someone has
+copied and pasted from a Microsoft Word that is encoded in
+`WINDOWS-1252`.
+
+You'll need to re-encode the data before importing it. This was
+successful for me with the caveat that there is a danger of double encoding:
+
+``` sh
+iconv -f WINDOWS-1252 -t UTF-8 source_data_file.sql > source_data_file.utf8.sql
+```
+
+then use this new sql file to re-run the `extraction_point.load_sql` command.
+
 ## Credits
 
 This project was developed by [Walter McGinnis](waltermcginnis.com) for
