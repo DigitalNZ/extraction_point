@@ -61,7 +61,7 @@ defmodule ExtractionPoint.ExtendedField.Parse do
     case values do
       [] -> [{col, nil}]
       [nil] -> [{col, nil}]
-      [_] -> [{col, values}]
+      _ -> [{col, values}]
     end
   end
 
