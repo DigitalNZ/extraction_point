@@ -390,7 +390,7 @@ Elixir application via `iex`.
 For `psql` for direct sql access:
 
 ```sh
-docker-compose run app psql -h db -U 'postgres` extraction_point_dev
+docker-compose run app psql -h db -U 'postgres' extraction_point_dev
 ```
 
 Extraction Point is built using [Elixir](https://elixir-lang.org ) and
