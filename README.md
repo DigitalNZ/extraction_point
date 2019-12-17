@@ -255,6 +255,7 @@ Option | Notes
 `only_baskets` | comma separated (no spaces) list of basket keys of those baskets that data should be limited to
 `limit` | number of results to limit to, used in combination with `offset` to paginate results
 `offset` | number of record in results to start after, E.g. when used in combination with `limit`, `limit=10\&offset=10` would say to only return results 11 - 20 or "page 2"
+`include_related` | call as `included_related=source` to use this option with content types or topics. Lists ids and titles columns for all topics (by type) that item is in
 
 Arguments for the scripts are positional, so options require that the
 output file parameter is also specified!
@@ -306,6 +307,16 @@ get the person type's data in `json` with limit and offset:
 ```sh
 ./bin/extract_as_json.sh person people-page-1.json limit=100\&offset=0
 ```
+
+Here are the options currently supported:
+
+Option | Notes
+----- | -----
+`except_baskets` | comma separated (no spaces) list of basket keys that should be excluded from results
+`only_baskets` | comma separated (no spaces) list of basket keys of those baskets that data should be limited to
+`limit` | number of results to limit to, used in combination with `offset` to paginate results
+`offset` | number of record in results to start after, E.g. when used in combination with `limit`, `limit=10\&offset=10` would say to only return results 11 - 20 or "page 2"
+`include_related` | call as `included_related=source` to lists ids and titles columns for all topics (by type) that item is in OR call as  `included_related=target` to lists ids and titles columns for all  topics and content items (by type) that a topic contains
 
 ##### Known issues
 
