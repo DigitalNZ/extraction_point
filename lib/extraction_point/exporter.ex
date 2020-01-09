@@ -1,7 +1,3 @@
-# need to break down raw_sql into select, from, where, and finishing clauses
-# since ecto version isn't ready for primetime, maybe do hardcoded version for tauranga
-# in builder for include_related, have count to assign table name alias
-# use it for select for outside
 defmodule ExtractionPoint.Exporter do
   import Ecto.Query
   import ExtractionPoint.ExportUtils
@@ -93,67 +89,43 @@ defmodule ExtractionPoint.Exporter do
 
   # returns ids and titles columns for each type of SOURCE topic
   # that this row is a related_item for in extracted_relations
+  # AS WELL AS
+  # returns ids and titles columns
+  # for each type of RELATED ITEM contained by topic (can be topic, still_image, web_link, etc.)
+  # that this row is SOURCE topic for in extracted_relations
+  # can be called only on topic types (as only topics are SOURCE in relations)
+  defp raw_sql(type, %{"include_related" => "both"} = options) do
+    type_as_table = to_table_name(type)
+    type_table_prefix = "target"
+
+    parts = related_source_parts(type_as_table, type_table_prefix)
+    parts = contains_related_parts(type_as_table, type_table_prefix, parts)
+
+    related_sql_from_parts(options, type_as_table, type_table_prefix, parts)
+  end
+
+  # returns ids and titles columns for each type of SOURCE topic
+  # that this row is a related_item for in extracted_relations
   # can be called on either on topic types
-  # or content itemt types (e.g. still_image)
+  # or content item types (e.g. still_image)
   defp raw_sql(type, %{"include_related" => "source"} = options) do
     type_as_table = to_table_name(type)
     type_table_prefix = "target"
 
-    parts = related_source_tables(type_as_table)
-    |> Enum.with_index()
-    |> Enum.reduce(%{selects: [], joins: []}, fn related_meta, acc ->
-      {topic_table, index} = related_meta
-
-      {ids_column, titles_column} = ids_titles_column_names(topic_table)
-
-      agg_args = %{ids_and_titles_subquery: source_topics_ids_and_titles_subquery(topic_table, index, type_as_table),
-                   index: index,
-                   type_as_table: type_as_table,
-                   ids_column: ids_column,
-                   titles_column: titles_column,
-                   join_column: "related_item_id"}
-
-      aggsubt = "aggsubt#{index}"
-
-      select_clause = select_clause(aggsubt, ids_column, titles_column)
-
-      join_clause = join_clause(aggsubt, aggregate_subquery(agg_args), type_table_prefix)
-
-      %{selects: acc.selects ++ [select_clause], joins: acc.joins ++ [join_clause]}
-    end)
+    parts = related_source_parts(type_as_table, type_table_prefix)
 
     related_sql_from_parts(options, type_as_table, type_table_prefix, parts)
   end
 
   # returns ids and titles columns
-  # for each type of RELATED ITEM (can be topic, still_image, web_link, etc.)
+  # for each type of RELATED ITEM contained by topic (can be topic, still_image, web_link, etc.)
   # that this row is SOURCE topic for in extracted_relations
   # can be called only on topic types (as only topics are SOURCE in relations)
   defp raw_sql(type, %{"include_related" => include_related} = options) when not is_nil(include_related) do
     type_as_table = to_table_name(type)
     type_table_prefix = "target"
 
-    parts = related_tables(type_as_table)
-    |> Enum.with_index()
-    |> Enum.reduce(%{selects: [], joins: []}, fn related_meta, acc ->
-      {related_table, index} = related_meta
-
-      {ids_column, titles_column} = ids_titles_column_names(related_table)
-
-      agg_args = %{ids_and_titles_subquery: related_ids_and_titles_subquery(related_table, index, type_as_table),
-                   index: index,
-                   type_as_table: type_as_table,
-                   ids_column: ids_column,
-                   titles_column: titles_column}
-
-      aggsubt = "aggsubt#{index}"
-
-      select_clause = select_clause(aggsubt, ids_column, titles_column)
-
-      join_clause = join_clause(aggsubt, aggregate_subquery(agg_args), type_table_prefix)
-
-      %{selects: acc.selects ++ [select_clause], joins: acc.joins ++ [join_clause]}
-    end)
+    parts = contains_related_parts(type_as_table, type_table_prefix)
 
     related_sql_from_parts(options, type_as_table, type_table_prefix, parts)
   end
@@ -210,8 +182,8 @@ defmodule ExtractionPoint.Exporter do
   end
 
   defp related_ids_and_titles_subquery(related_table, index, type_as_table) do
-    rit = "ri#{index}"
-    relst = "r#{index}"
+    rit = "ri_contains_#{index}"
+    relst = "r_contains_#{index}"
 
     ~s"""
     SELECT #{rit}.id, #{rit}.title, #{relst}.source_id
@@ -225,8 +197,8 @@ defmodule ExtractionPoint.Exporter do
   end
 
   defp source_topics_ids_and_titles_subquery(topic_table, index, type_as_table) do
-    rit = "ri#{index}"
-    relst = "r#{index}"
+    rit = "ri_source_#{index}"
+    relst = "r_source_#{index}"
 
     ~s"""
     SELECT #{rit}.id, #{rit}.title, #{relst}.related_item_id
@@ -240,7 +212,8 @@ defmodule ExtractionPoint.Exporter do
   end
 
   defp aggregate_subquery(args) do
-    aggt = "aggt#{args.index}"
+    related_code = if args[:include_related_type], do: "_#{args.include_related_type}_", else: ""
+    aggt = "aggt#{related_code}#{args.index}"
     risubt = "risubt#{args.index}"
     join_column = args[:join_column] || "source_id"
 
@@ -273,6 +246,10 @@ defmodule ExtractionPoint.Exporter do
     {"#{table}_ids", "#{table}_titles"}
   end
 
+  defp ids_titles_column_names(table, related_prefix) do
+    {"#{related_prefix}_#{table}_ids", "#{related_prefix}_#{table}_titles"}
+  end
+
   defp related_sql_from_parts(options, type_as_table, type_table_prefix, parts) do
     sql = ~s"""
     SELECT #{type_table_prefix}.*,
@@ -290,5 +267,56 @@ defmodule ExtractionPoint.Exporter do
     "#{sql} ORDER BY #{type_table_prefix}.id"
     |> add_to_sql_if_present(options, "limit")
     |> add_to_sql_if_present(options, "offset")
+  end
+
+  defp related_source_parts(type_as_table, type_table_prefix, init_parts \\ %{selects: [], joins: []})  do
+    related_source_tables(type_as_table)
+    |> Enum.with_index()
+    |> Enum.reduce(init_parts, fn related_meta, acc ->
+      {topic_table, index} = related_meta
+
+      {ids_column, titles_column} = ids_titles_column_names(topic_table, "within")
+
+      agg_args = %{ids_and_titles_subquery: source_topics_ids_and_titles_subquery(topic_table, index, type_as_table),
+                   index: index,
+                   type_as_table: type_as_table,
+                   ids_column: ids_column,
+                   titles_column: titles_column,
+                   join_column: "related_item_id",
+                   include_related_type: "source"}
+
+      aggsubt = "aggsubt_source_#{index}"
+
+      select_clause = select_clause(aggsubt, ids_column, titles_column)
+
+      join_clause = join_clause(aggsubt, aggregate_subquery(agg_args), type_table_prefix)
+
+      %{selects: acc.selects ++ [select_clause], joins: acc.joins ++ [join_clause]}
+    end)
+  end
+
+  defp contains_related_parts(type_as_table, type_table_prefix, init_parts \\ %{selects: [], joins: []})  do
+    related_tables(type_as_table)
+    |> Enum.with_index()
+    |> Enum.reduce(init_parts, fn related_meta, acc ->
+      {related_table, index} = related_meta
+
+      {ids_column, titles_column} = ids_titles_column_names(related_table, "contains")
+
+      agg_args = %{ids_and_titles_subquery: related_ids_and_titles_subquery(related_table, index, type_as_table),
+                   index: index,
+                   type_as_table: type_as_table,
+                   ids_column: ids_column,
+                   titles_column: titles_column,
+                   include_related_type: "contains"}
+
+      aggsubt = "aggsubt_contains_#{index}"
+
+      select_clause = select_clause(aggsubt, ids_column, titles_column)
+
+      join_clause = join_clause(aggsubt, aggregate_subquery(agg_args), type_table_prefix)
+
+      %{selects: acc.selects ++ [select_clause], joins: acc.joins ++ [join_clause]}
+    end)
   end
 end
