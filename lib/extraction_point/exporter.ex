@@ -5,6 +5,7 @@ defmodule ExtractionPoint.Exporter do
   alias ExtractionPoint.Repo
 
   @not_public_title "No Public Version Available  (perhaps this item is under construction?)"
+  @related_tables_with_files ~w(extracted_audio_recordings extracted_documents extracted_still_images extracted_videos)
 
   # assume pagination rather than stream for json, etc.
   def list_type(type, options \\ %{}) do
@@ -185,8 +186,21 @@ defmodule ExtractionPoint.Exporter do
     rit = "ri_contains_#{index}"
     relst = "r_contains_#{index}"
 
-    ~s"""
+    sql = ~s"""
     SELECT #{rit}.id, #{rit}.title, #{relst}.source_id
+    """
+
+    sql = if Enum.member?(@related_tables_with_files, related_table) do
+      ~s"""
+      #{sql},
+      #{rit}.#{file_path_column(related_table)}
+      """
+    else
+      sql
+    end
+
+    ~s"""
+    #{sql}
     FROM #{related_table} #{rit}
     JOIN extracted_relations #{relst}
     ON #{relst}.related_item_id = #{rit}.id
@@ -217,10 +231,22 @@ defmodule ExtractionPoint.Exporter do
     risubt = "risubt#{args.index}"
     join_column = args[:join_column] || "source_id"
 
-    ~s"""
+    sql = ~s"""
     SELECT #{aggt}.id,
     ARRAY_AGG(#{risubt}.id) AS #{args.ids_column},
     ARRAY_AGG(#{risubt}.title) AS #{args.titles_column}
+    """
+    sql = if args[:files_column] do
+      ~s"""
+      #{sql},
+      ARRAY_AGG(#{risubt}.#{args.original_file_path_column}) AS #{args.files_column}
+      """
+    else
+      sql
+    end
+
+    sql = ~s"""
+    #{sql}
     FROM #{args.type_as_table} #{aggt}
     JOIN (#{args.ids_and_titles_subquery}) #{risubt}
     ON #{risubt}.#{join_column} = #{aggt}.id
@@ -232,6 +258,13 @@ defmodule ExtractionPoint.Exporter do
     ~s"""
     #{aggsubt}.#{ids_column},
     #{aggsubt}.#{titles_column}
+    """
+  end
+
+  defp select_clause(aggsubt, ids_column, titles_column, files_column) do
+    ~s"""
+    #{select_clause(aggsubt, ids_column, titles_column)},
+    #{aggsubt}.#{files_column}
     """
   end
 
@@ -310,13 +343,29 @@ defmodule ExtractionPoint.Exporter do
                    titles_column: titles_column,
                    include_related_type: "contains"}
 
+      files_column = "contains_#{related_table}_file_relative_paths"
+
+      agg_args = if Enum.member?(@related_tables_with_files, related_table) do
+        Map.put(agg_args, :files_column, files_column)
+        |> Map.put(:original_file_path_column, file_path_column(related_table))
+      else
+        agg_args
+      end
+
       aggsubt = "aggsubt_contains_#{index}"
 
-      select_clause = select_clause(aggsubt, ids_column, titles_column)
+      select_clause = if Enum.member?(@related_tables_with_files, related_table) do
+        select_clause(aggsubt, ids_column, titles_column, files_column)
+      else
+        select_clause(aggsubt, ids_column, titles_column)
+      end
 
       join_clause = join_clause(aggsubt, aggregate_subquery(agg_args), type_table_prefix)
 
       %{selects: acc.selects ++ [select_clause], joins: acc.joins ++ [join_clause]}
     end)
   end
+
+  defp file_path_column("extracted_still_images"), do: "relative_original_file_path"
+  defp file_path_column(_), do: "relative_file_path"
 end
